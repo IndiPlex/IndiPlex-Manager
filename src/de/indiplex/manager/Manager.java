@@ -19,12 +19,16 @@ package de.indiplex.manager;
 
 import de.indiplex.manager.util.Config;
 import de.indiplex.manager.util.Version;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +37,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.FileUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -76,14 +81,21 @@ public class Manager extends JavaPlugin {
     }
 
     @Override
+    public void onLoad() {
+        log.info(pre+"Checking for update...");
+        checkUpdate();
+    }
+
+    @Override
     public void onEnable() {
         log.info(pre + "Setting up API...");
 
         config.init(this);                
 
         if(config.online) {
-            log.info(pre + "Reading Online API..");
-            loadPluginXML();
+            log.info(pre + "Reading Online API...");
+            loadPluginXML();            
+            
             log.info(pre + "Creating descriptions...");
             createDescriptions();
             log.info(pre + "Updating config...");
@@ -105,6 +117,51 @@ public class Manager extends JavaPlugin {
 
     public static boolean isLoaded() {
         return loaded;
+    }
+    
+    private void checkUpdate() {
+        try {
+            URL vFile = new URL("http://hosting.indiplex.de/plugins/version");
+            BufferedReader br = new BufferedReader(new InputStreamReader(vFile.openStream()));
+            Version v = Version.parse(br.readLine());
+            br.close();
+            Version tv = Version.parse(getDescription().getVersion());
+            if (v.isNewer(config.getVersionDepth(), tv)) {
+                if (update()) {
+                    log.info(pre+"Updated to v"+getDescription().getVersion());
+                } else {
+                    log.warning(pre+"Can't update!");
+                }
+            } else {
+                log.info("No update found");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    
+    private boolean update() {
+        try {
+            URL uFile = new URL("http://hosting.indiplex.de/plugins/release/IndiPlexManager.jar");
+            File tmp = new File(getServer().getUpdateFolderFile(), "IPM.jar.tmp");
+            if (tmp.exists()) {
+                tmp.delete();
+            }
+            tmp.createNewFile();
+            InputStream is = uFile.openStream();
+            OutputStream out = new FileOutputStream(tmp);
+            int i = is.read();
+            while (i!=-1) {
+                out.write(i);
+                i = is.read();
+            }
+            is.close();
+            out.close();
+            FileUtil.copy(tmp, getFile());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void loadPluginXML() {
@@ -289,7 +346,7 @@ public class Manager extends JavaPlugin {
         }
     }
     
-    public boolean enqueueDownloadPlugin(String name) {
+    public boolean queueDownloadPlugin(String name) {
         return downloadPlugin(name);
     }
 

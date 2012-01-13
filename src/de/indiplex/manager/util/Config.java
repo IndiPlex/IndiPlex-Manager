@@ -185,13 +185,13 @@ public class Config {
                     vDep = config.getInt(s + ".versiondepth", versionDepth);
                 }
                 if (installed_version == null || actual_version == null || (auto_update && installed_version.isNewer(vDep, actual_version))) {
-                    IPM.enqueueDownloadPlugin(s);
+                    IPM.queueDownloadPlugin(s);
                     log.info(Manager.pre + info.getName() + " was updated to v" + actual_version);
                 } else if (installed_version.isNewer(vDep, actual_version)) {
                     log.info(Manager.pre + "New version of " + info.getName() + " found(v" + installed_version + " is installed, v" + actual_version + " is the actual), but autoupdate is off...");
                 } else if (!pluginFile.exists()) {
                     log.info(Manager.pre + info.getName() + " is missing");
-                    IPM.enqueueDownloadPlugin(s);
+                    IPM.queueDownloadPlugin(s);
                 }
                 Plugin plug = IPM.getServer().getPluginManager().loadPlugin(pluginFile);
                 if (plug == null) {
@@ -214,4 +214,13 @@ public class Config {
     public StorageHandler getStHandler() {
         return stHandler;
     }
+
+    public int getVersionDepth() {
+        return versionDepth;
+    }
+
+    public boolean isAutoUpdate() {
+        return autoUpdate;
+    }
+    
 }

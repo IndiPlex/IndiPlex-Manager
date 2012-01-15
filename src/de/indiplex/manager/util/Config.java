@@ -18,10 +18,20 @@
 package de.indiplex.manager.util;
 
 import de.indiplex.manager.*;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
+import org.apache.commons.codec.binary.Base64InputStream;
+import org.apache.commons.codec.binary.Base64OutputStream;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.config.Configuration;
 
@@ -30,21 +40,24 @@ import org.bukkit.util.config.Configuration;
  * @author IndiPlex <kahabrakh@indiplex.de>
  */
 public class Config {
-    private Manager IPM;
 
+    private Manager IPM;
     public static final Logger log = Logger.getLogger("Minecraft");
-    
     public boolean online = true;
     private int versionDepth;
     private boolean autoUpdate;
-    
+    private HashMap<String, String> versions = new HashMap<String, String>();
     private StorageHandler stHandler;
 
     public void init(Manager IPM) {
         this.IPM = IPM;
+        readVersions();
+        if (versions.get("IndiPlexManager") == null) {
+            versions.put("IndiPlexManager", "0.0.0");
+        }
         getOptions();
     }
-    
+
     private void getOptions() {
         Configuration config = IPM.getConfiguration();
         config.load();
@@ -95,8 +108,8 @@ public class Config {
         stHandler = new StorageHandler(StorageHandler.Type.valueOf(type.toUpperCase()), db, user, pass, host);
         config.save();
     }
-    
-        public void update() {
+
+    public void update() {
         Configuration config = IPM.getConfiguration();
         List<String> keys = new ArrayList<String>();
         for (IPMPluginInfo plugin : IPM.getPluginInfos()) {
@@ -128,7 +141,7 @@ public class Config {
         }
         config.save();
     }
-    
+
     public ArrayList<Plugin> load() {
         try {
             Configuration config = IPM.getConfiguration();
@@ -168,7 +181,7 @@ public class Config {
                 Version actual_version = null;
 
                 actual_version = info.getVersion();
-                String v = config.getString(info.getName() + ".version.installed");
+                String v = versions.get(info.getName());
                 if (v != null) {
                     installed_version = Version.parse(v);
                 }
@@ -210,7 +223,7 @@ public class Config {
     public void save() {
         stHandler.save();
     }
-    
+
     public StorageHandler getStHandler() {
         return stHandler;
     }
@@ -222,5 +235,48 @@ public class Config {
     public boolean isAutoUpdate() {
         return autoUpdate;
     }
-    
+
+    public void setVersion(String p, String v) {
+        versions.put(p, v);
+    }
+
+    private void readVersions() {
+        try {
+            File vers = new File(IPM.getDataFolder(), "versions");
+            if (!vers.getParentFile().exists()) {
+                vers.mkdirs();
+            }
+            if (!vers.exists()) {
+                vers.createNewFile();
+            }
+            BufferedReader br = new BufferedReader(new InputStreamReader(new Base64InputStream(new FileInputStream(vers))));
+            while (br.ready()) {
+                String line = br.readLine();
+                String[] parts = line.split("\\:");
+                if (parts.length != 2) {
+                    continue;
+                }
+                versions.put(parts[0], parts[1]);
+            }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void saveVersions() {
+        try {
+            PrintStream ps = new PrintStream(new Base64OutputStream(new FileOutputStream(new File(IPM.getDataFolder(), "versions"))));
+            for (String p : versions.keySet()) {
+                ps.println(p + ":" + versions.get(p));
+            }
+            ps.close();
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public String getVersion(String p) {
+        return versions.get(p);
+    }
 }

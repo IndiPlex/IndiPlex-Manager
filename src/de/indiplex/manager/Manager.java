@@ -63,11 +63,11 @@ public class Manager extends JavaPlugin {
     public ArrayList<IPMPluginInfo> getPluginInfos() {
         return pluginInfos;
     }
-    
+
     public Config getIPMConfig() {
         return config;
     }
-    
+
     @Override
     public void onDisable() {
         Plugin[] plugs = getServer().getPluginManager().getPlugins();
@@ -81,21 +81,22 @@ public class Manager extends JavaPlugin {
     }
 
     @Override
-    public void onLoad() {
-        log.info(pre+"Checking for update...");
-        checkUpdate();
-    }
-
-    @Override
     public void onEnable() {
         log.info(pre + "Setting up API...");
 
-        config.init(this);                
+        config.init(this);
 
-        if(config.online) {
+        if (config.online) {
+            log.info(pre + "Checking for update...");
+            if (checkUpdate()) {
+                log.warning(pre + "RESTART SERVER TO ENABLE THE UPDATE!");
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
+
             log.info(pre + "Reading Online API...");
-            loadPluginXML();            
-            
+            loadPluginXML();
+
             log.info(pre + "Creating descriptions...");
             createDescriptions();
             log.info(pre + "Updating config...");
@@ -106,44 +107,52 @@ public class Manager extends JavaPlugin {
         }
         log.info(pre + "Loading config...");
         ArrayList<Plugin> plugs = config.load();
-        if(config.online) {
+        if (config.online) {
             log.info(pre + "Loading Plugins...");
         }
         loadPlugins(plugs);
 
         log.info(pre + "Finished!");
+        log.info(pre + "IndiPlexManager v" + getDescription().getVersion() + " was enabled!");
         loaded = true;
     }
 
     public static boolean isLoaded() {
         return loaded;
     }
-    
-    private void checkUpdate() {
+
+    private boolean checkUpdate() {
         try {
             URL vFile = new URL("http://hosting.indiplex.de/plugins/version");
             BufferedReader br = new BufferedReader(new InputStreamReader(vFile.openStream()));
             Version v = Version.parse(br.readLine());
             br.close();
-            Version tv = Version.parse(getDescription().getVersion());
-            if (v.isNewer(config.getVersionDepth(), tv)) {
-                if (update()) {
-                    log.info(pre+"Updated to v"+getDescription().getVersion());
+            Version tv = Version.parse(config.getVersion("IndiPlexManager"));
+            if (tv.isNewer(config.getVersionDepth(), v)) {
+                if (update(v)) {
+                    log.info(pre + "Updated to v" + v);
+                    return true;
                 } else {
-                    log.warning(pre+"Can't update!");
+                    log.warning(pre + "Can't update!");
                 }
             } else {
                 log.info("No update found");
             }
+            return false;
         } catch (Exception ex) {
             ex.printStackTrace();
+            return false;
         }
     }
-    
-    private boolean update() {
+
+    private boolean update(Version newV) {
         try {
             URL uFile = new URL("http://hosting.indiplex.de/plugins/release/IndiPlexManager.jar");
-            File tmp = new File(getServer().getUpdateFolderFile(), "IPM.jar.tmp");
+            File uFolder = getServer().getUpdateFolderFile();
+            if (!uFolder.exists()) {
+                uFolder.mkdirs();
+            }
+            File tmp = new File(uFolder, "IPM.jar.tmp");
             if (tmp.exists()) {
                 tmp.delete();
             }
@@ -151,15 +160,18 @@ public class Manager extends JavaPlugin {
             InputStream is = uFile.openStream();
             OutputStream out = new FileOutputStream(tmp);
             int i = is.read();
-            while (i!=-1) {
+            while (i != -1) {
                 out.write(i);
                 i = is.read();
             }
             is.close();
             out.close();
             FileUtil.copy(tmp, getFile());
+            config.setVersion("IndiPlexManager", newV.toString());
+            config.saveVersions();
             return true;
         } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }
@@ -176,7 +188,7 @@ public class Manager extends JavaPlugin {
 
             for (int i = 0; i < pluginsNodes.getLength(); i++) {
                 Node node = pluginsNodes.item(i);
-                
+
                 IPMPluginInfo plugin = null;
                 String name = null;
                 String uri = null;
@@ -185,7 +197,7 @@ public class Manager extends JavaPlugin {
                 String depends = null;
                 boolean fupdate = false;
                 boolean fdownload = false;
-                
+
                 if (node.getNodeType() != Node.ELEMENT_NODE) {
                     continue;
                 }
@@ -324,7 +336,9 @@ public class Manager extends JavaPlugin {
         }
         IPMPluginInfo info = getPluginInfoByPluginName(name);
         String uri = info.getUri();
-        uri += "/" + info.getVersion().toString() + ".jar";
+        if (uri.endsWith(".jar")) {
+            uri += "/" + info.getVersion().toString() + ".jar";
+        }
         log.info(pre + "Downloading: " + uri);
         try {
             FileOutputStream fos = new FileOutputStream(new File(pluginFolder, name + ".jar"));
@@ -337,6 +351,8 @@ public class Manager extends JavaPlugin {
             }
             fos.close();
             is.close();
+            config.setVersion(info.getName(), info.getVersion().toString());
+            config.saveVersions();
             getConfiguration().setProperty(info.getName() + ".version.installed", info.getVersion().toString());
             getConfiguration().save();
             return true;
@@ -345,7 +361,7 @@ public class Manager extends JavaPlugin {
             return false;
         }
     }
-    
+
     public boolean queueDownloadPlugin(String name) {
         return downloadPlugin(name);
     }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="IndiPlexManager" default="default" basedir=".">    
+    <property environment="env"/>
     <description>Builds, tests, and runs the project IndiPlexManager.</description>
     <import file="nbproject/build-impl.xml"/>
     <target name="-post-jar">

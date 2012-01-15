@@ -272,8 +272,6 @@ public class Base64 extends BaseNCodec {
         super(BYTES_PER_UNENCODED_BLOCK, BYTES_PER_ENCODED_BLOCK, 
                 lineLength,
                 lineSeparator == null ? 0 : lineSeparator.length);
-        // TODO could be simplified if there is no requirement to reject invalid line sep when length <=0
-        // @see test case Base64Test.testConstructors() 
         if (lineSeparator != null) {
             if (containsAlphabetOrPad(lineSeparator)) {
                 String sep = StringUtils.newStringUtf8(lineSeparator);

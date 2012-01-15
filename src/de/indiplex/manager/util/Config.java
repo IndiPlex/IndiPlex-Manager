@@ -244,7 +244,7 @@ public class Config {
         try {
             File vers = new File(IPM.getDataFolder(), "versions");
             if (!vers.getParentFile().exists()) {
-                vers.mkdirs();
+                vers.getParentFile().mkdirs();
             }
             if (!vers.exists()) {
                 vers.createNewFile();
@@ -266,12 +266,19 @@ public class Config {
 
     public void saveVersions() {
         try {
-            PrintStream ps = new PrintStream(new Base64OutputStream(new FileOutputStream(new File(IPM.getDataFolder(), "versions"))));
+            File vers = new File(IPM.getDataFolder(), "versions");
+            if (!vers.getParentFile().exists()) {
+                vers.getParentFile().mkdirs();
+            }
+            if (!vers.exists()) {
+                vers.createNewFile();
+            }
+            PrintStream ps = new PrintStream(new Base64OutputStream(new FileOutputStream(vers)));
             for (String p : versions.keySet()) {
                 ps.println(p + ":" + versions.get(p));
             }
             ps.close();
-        } catch (FileNotFoundException ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }

@@ -5,6 +5,5 @@
     <import file="nbproject/build-impl.xml"/>
     <target name="-post-jar">
         <copy file="${dist.jar}" flatten="true" todir="../release/" />
-        <copy file="${dist.jar}" flatten="true" todir="${env.MINECRAFT_HOME}/plugins" />
     </target>
 </project>

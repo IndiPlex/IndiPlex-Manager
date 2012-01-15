@@ -340,7 +340,7 @@ public class Manager extends JavaPlugin {
         }
         IPMPluginInfo info = getPluginInfoByPluginName(name);
         String uri = info.getUri();
-        if (uri.endsWith(".jar")) {
+        if (!uri.endsWith(".jar")) {
             uri += "/" + info.getVersion().toString() + ".jar";
         }
         log.info(pre + "Downloading: " + uri);

@@ -52,6 +52,7 @@ public class Manager extends JavaPlugin {
     public static final Logger log = Logger.getLogger("Minecraft");
     public static final String pre = "[IPM] ";
     private static boolean loaded;
+    private boolean updated = false;
     private ArrayList<IPMPluginInfo> pluginInfos = new ArrayList<IPMPluginInfo>();
     private HashMap<String, API> apis = new HashMap<String, API>();
     private Config config = new Config();
@@ -71,9 +72,11 @@ public class Manager extends JavaPlugin {
     @Override
     public void onDisable() {
         Plugin[] plugs = getServer().getPluginManager().getPlugins();
-        for (Plugin p : plugs) {
-            if (p instanceof IPMPlugin) {
-                getServer().getPluginManager().disablePlugin(p);
+        if (!updated) {
+            for (Plugin p : plugs) {
+                if (p instanceof IPMPlugin) {
+                    getServer().getPluginManager().disablePlugin(p);
+                }
             }
         }
         loaded = false;
@@ -90,6 +93,7 @@ public class Manager extends JavaPlugin {
             log.info(pre + "Checking for update...");
             if (checkUpdate()) {
                 log.warning(pre + "RESTART SERVER TO ENABLE THE UPDATE!");
+                updated = true;
                 getServer().getPluginManager().disablePlugin(this);
                 return;
             }

@@ -69,6 +69,7 @@ public class IPMAPI {
     
     private YamlConfiguration getConfig(Plugin plugin) {
         File f = new File(IPM.getDataFolder(), "/config/"+plugin.getDescription().getName()+".yml");
+        Manager.log.info(Manager.pre+"Reqested config for "+plugin.getDescription().getName()+" file "+f);
         YamlConfiguration yaml = new YamlConfiguration();
         try {
             if (!f.exists()) f.createNewFile();

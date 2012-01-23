@@ -89,7 +89,7 @@ public class Manager extends JavaPlugin {
 
         config.init(this);
 
-        if (config.online) {
+        if (config.isOnline()) {
             log.info(pre + "Checking for update...");
             if (checkUpdate()) {
                 log.warning(pre + "RESTART SERVER TO ENABLE THE UPDATE!");
@@ -111,7 +111,7 @@ public class Manager extends JavaPlugin {
         }
         log.info(pre + "Loading config...");
         ArrayList<Plugin> plugs = config.load();
-        if (config.online) {
+        if (config.isOnline()) {
             log.info(pre + "Loading Plugins...");
         }
         loadPlugins(plugs);
@@ -185,8 +185,8 @@ public class Manager extends JavaPlugin {
             pluginInfos.clear();
             String b[] = getServer().getVersion().split("b");
             String bversion = b[b.length - 1].split("j")[0];
-            String xmlDocURL = "http://hosting.indiplex.de/plugins/plugins.php?version=" + bversion;
-            Document D = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDocURL);
+            URL xmlDocURL = new URL("http://hosting.indiplex.de/plugins/plugins.php?version=" + bversion);
+            Document D = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(xmlDocURL.openStream());
             Element mainNode = D.getDocumentElement();
             NodeList pluginsNodes = mainNode.getChildNodes();
 
@@ -237,8 +237,7 @@ public class Manager extends JavaPlugin {
                 log.info(pre + "Found plugin " + plugin.getName());
             }
         } catch (Exception ex) {
-            config.online = false;
-            log.warning(pre + "Can't reach API(" + ex.toString() + ")...");
+            config.setOffline(ex);
         }
     }
 
@@ -272,7 +271,7 @@ public class Manager extends JavaPlugin {
 
     private void loadPlugins(ArrayList<Plugin> plugs) {
         ArrayList<Plugin> queuePlugins = new ArrayList<Plugin>();
-        if (config.online) {
+        if (config.isOnline()) {
             for (Plugin p : plugs) {
                 loadPlugin(plugs, queuePlugins, p);
             }
@@ -287,7 +286,7 @@ public class Manager extends JavaPlugin {
             }
             IPMPlugin plug = (IPMPlugin) p;
             IPMPluginInfo info = getPluginInfoByPluginName(plug.getDescription().getName());
-            if (!config.online) {
+            if (!config.isOnline()) {
                 PluginDescriptionFile des = p.getDescription();
                 info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
             }
@@ -305,6 +304,7 @@ public class Manager extends JavaPlugin {
         IPMPluginInfo ipmPlug = getPluginInfoByPluginName(plugin.getDescription().getName().replaceAll(" ", ""));
         if (ipmPlug == null) {
             log.severe(pre + "CAN'T FIND PLUGIN " + plugin.getDescription().getName().replaceAll(" ", "") + "!!!");
+            return;
         }
         for (String s : ipmPlug.getDepends()) {
             if (s.equals("")) {

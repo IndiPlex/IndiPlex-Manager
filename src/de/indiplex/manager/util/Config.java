@@ -21,11 +21,12 @@ import de.indiplex.manager.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,7 @@ public class Config {
 
     private Manager IPM;
     public static final Logger log = Logger.getLogger("Minecraft");
-    public boolean online = true;
+    private boolean online = true;
     private int versionDepth;
     private boolean autoUpdate;
     private HashMap<String, String> versions = new HashMap<String, String>();
@@ -56,6 +57,28 @@ public class Config {
             versions.put("IndiPlexManager", "0.0.0");
         }
         getOptions();
+        if (isOnline()) {
+            checkOnline();
+        }
+    }
+
+    private void checkOnline() {
+        try {
+            URL url = new URL("http://hosting.indiplex.de/plugins/plugins.php");
+            URLConnection conn = url.openConnection();
+            conn.connect();
+        } catch (IOException ex) {
+            setOffline(ex);
+        }
+    }
+
+    public boolean isOnline() {
+        return online;
+    }
+
+    public void setOffline(Exception ex) {
+        log.warning(Manager.pre + "Can't reach API(" + ex.toString() + ")...");
+        online = false;
     }
 
     private void getOptions() {
@@ -172,10 +195,10 @@ public class Config {
                 return plugs;
             }
             for (String s : keys) {
-                if (!config.getBoolean(s + ".enabled", false)) {
+                IPMPluginInfo info = IPM.getPluginInfoByPluginName(s);
+                if (info == null || (!info.isFdownload() && !config.getBoolean(s + ".enabled", false))) {
                     continue;
                 }
-                IPMPluginInfo info = IPM.getPluginInfoByPluginName(s);
                 File pluginFile = new File(pluginFolder, s + ".jar");
                 Version installed_version = null;
                 Version actual_version = null;
@@ -190,7 +213,9 @@ public class Config {
                 }
 
                 boolean auto_update = autoUpdate;
-                if (config.getString(info.getName() + ".autoupdate") != null) {
+                if (info.isFupdate()) {
+                    auto_update = true;
+                } else if (config.getString(info.getName() + ".autoupdate") != null) {
                     auto_update = config.getBoolean(info.getName() + ".autoupdate", true);
                 }
                 int vDep = versionDepth;

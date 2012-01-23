@@ -1,12 +1,13 @@
 package de.indiplex.manager;
 
 import de.indiplex.manager.util.Version;
+import java.io.Serializable;
 
 /**
  *
  * @author Cartan12
  */
-public class IPMPluginInfo {
+public class IPMPluginInfo implements Serializable {
     
     private String name;
     private String uri;

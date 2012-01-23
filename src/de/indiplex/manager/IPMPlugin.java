@@ -77,11 +77,35 @@ public abstract class IPMPlugin extends JavaPlugin {
     
     protected void printEnabled(String pre) {
         checkInfo();
+        if (pre==null) {
+            return;
+        }
         log.info(pre + getName()+ " v"+ getVersion() + " was enabled!");
     }
     
     protected void printDisabled(String pre) {
         checkInfo();
+        if (pre==null) {
+            return;
+        }
         log.info(pre + getName()+ " v"+ getVersion() + " was disabled!");
     }
+
+    @Override
+    public void onEnable() {
+        if (API == null) {
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        printEnabled(onIPMEnable());
+    }
+
+    @Override
+    public void onDisable() {
+        printDisabled(onIPMDisable());
+    }
+    
+    protected abstract String onIPMEnable();
+    protected abstract String onIPMDisable();
+    
 }

@@ -17,11 +17,13 @@
  */
 package de.indiplex.manager.util;
 
+import java.io.Serializable;
+
 /**
  *
  * @author IndiPlex <kahabrakh@indiplex.de>
  */
-public class Version {
+public class Version implements Serializable {
 
     private final int stable;
     private final int beta;

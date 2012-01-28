@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.util.config.Configuration;
 
 /**
@@ -165,13 +166,13 @@ public class Config {
         config.save();
     }
 
-    public ArrayList<Plugin> load() {
+    public HashMap<IPMPluginInfo,Plugin> load() {
         try {
             Configuration config = IPM.getConfiguration();
             List<String> keys = new ArrayList<String>(config.getKeys());
             keys.remove("options");
             File pluginFolder = new File(IPM.getDataFolder().getAbsolutePath() + "/plugins");
-            ArrayList<Plugin> plugs = new ArrayList<Plugin>();
+            HashMap<IPMPluginInfo,Plugin> plugs = new HashMap<IPMPluginInfo,Plugin>();
             if (!online) {
                 File pluginsFirst = new File(IPM.getDataFolder().getAbsolutePath() + "/pluginsfirst");
                 if (pluginsFirst.exists()) {
@@ -180,7 +181,9 @@ public class Config {
                         if (plug == null) {
                             log.severe(Manager.pre + "PLUGIN " + p + " IS INVALID!!!");
                         }
-                        plugs.add(plug);
+                        PluginDescriptionFile des = plug.getDescription();
+                        IPMPluginInfo info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
+                        plugs.put(info, plug);
                     }
                 }
                 if (pluginFolder.exists()) {
@@ -189,7 +192,9 @@ public class Config {
                         if (plug == null) {
                             log.severe(Manager.pre + "PLUGIN " + p + " IS INVALID!!!");
                         }
-                        plugs.add(plug);
+                        PluginDescriptionFile des = plug.getDescription();
+                        IPMPluginInfo info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
+                        plugs.put(info, plug);
                     }
                 }
                 return plugs;
@@ -233,9 +238,10 @@ public class Config {
                 }
                 Plugin plug = IPM.getServer().getPluginManager().loadPlugin(pluginFile);
                 if (plug == null) {
-                    log.severe(Manager.pre + "PLUGIN " + s + " IS INVALID!!!");
+                    log.severe(Manager.pre + " CANT LOAD PLUGIN " + s + "!!!");
+                    continue;
                 }
-                plugs.add(plug);
+                plugs.put(info, plug);
             }
             return plugs;
         } catch (Exception e) {

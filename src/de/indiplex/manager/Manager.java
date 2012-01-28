@@ -110,7 +110,7 @@ public class Manager extends JavaPlugin {
             log.warning(pre + "The dependency management is deactivated. It could happen, that the plugins can not load, so place the dependencies in the folder /plugins/IndiPlexManager/pluginsfirst");
         }
         log.info(pre + "Loading config...");
-        ArrayList<Plugin> plugs = config.load();
+        HashMap<IPMPluginInfo, Plugin> plugs = config.load();
         if (config.isOnline()) {
             log.info(pre + "Loading Plugins...");
         }
@@ -269,23 +269,24 @@ public class Manager extends JavaPlugin {
         }
     }
 
-    private void loadPlugins(ArrayList<Plugin> plugs) {
-        ArrayList<Plugin> queuePlugins = new ArrayList<Plugin>();
+    private void loadPlugins(HashMap<IPMPluginInfo, Plugin> plugs) {
+        HashMap<IPMPluginInfo, Plugin> queuePlugins = new HashMap<IPMPluginInfo, Plugin>();
         if (config.isOnline()) {
-            for (Plugin p : plugs) {
+            for (IPMPluginInfo p : plugs.keySet()) {
                 loadPlugin(plugs, queuePlugins, p);
             }
         } else {
             queuePlugins = plugs;
         }
         getConfiguration().load();
-        for (Plugin p : queuePlugins) {
+        for (IPMPluginInfo info : queuePlugins.keySet()) {
+            log.warning(pre+"load "+info.getName());
+            Plugin p = queuePlugins.get(info);
             if (!(p instanceof IPMPlugin)) {
                 log.warning(pre + "Can't load " + p.getDescription().getName() + "!");
                 continue;
             }
             IPMPlugin plug = (IPMPlugin) p;
-            IPMPluginInfo info = getPluginInfoByPluginName(plug.getDescription().getName());
             if (!config.isOnline()) {
                 PluginDescriptionFile des = p.getDescription();
                 info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
@@ -294,32 +295,29 @@ public class Manager extends JavaPlugin {
             plug.onLoad();
         }
         getConfiguration().save();
-        for (Plugin p : queuePlugins) {
+        for (Plugin p : queuePlugins.values()) {
             getServer().getPluginManager().enablePlugin(p);
             log.info(pre + "Loaded " + p.getDescription().getName());
         }
     }
 
-    private void loadPlugin(ArrayList<Plugin> plugs, ArrayList<Plugin> queuePlugins, Plugin plugin) {
-        IPMPluginInfo ipmPlug = getPluginInfoByPluginName(plugin.getDescription().getName().replaceAll(" ", ""));
-        if (ipmPlug == null) {
-            log.severe(pre + "CAN'T FIND PLUGIN " + plugin.getDescription().getName().replaceAll(" ", "") + "!!!");
-            return;
-        }
+    private void loadPlugin(HashMap<IPMPluginInfo, Plugin> plugs, HashMap<IPMPluginInfo, Plugin> queuePlugins, IPMPluginInfo ipmPlug) {
         for (String s : ipmPlug.getDepends()) {
             if (s.equals("")) {
                 continue;
             }
-            Plugin p = getBukkitPluginByPluginName(plugs, s);
+            IPMPluginInfo info = getPluginInfoByPluginName(s);
+            Plugin p = plugs.get(info);
             if (p == null) {
                 log.severe(pre + "PLUGIN " + s + " INVALID!!!");
+                return;
             }
-            if (!queuePlugins.contains(p)) {
-                loadPlugin(plugs, queuePlugins, p);
+            if (!queuePlugins.containsKey(info)) {
+                loadPlugin(plugs, queuePlugins, info);
             }
         }
-        if (!queuePlugins.contains(plugin)) {
-            queuePlugins.add(plugin);
+        if (!queuePlugins.containsKey(ipmPlug)) {
+            queuePlugins.put(ipmPlug, plugs.get(ipmPlug));
         }
 
     }
@@ -379,7 +377,7 @@ public class Manager extends JavaPlugin {
         }
         return null;
     }
-    
+
     public API getAPI(String api) {
         return apis.get(api);
     }

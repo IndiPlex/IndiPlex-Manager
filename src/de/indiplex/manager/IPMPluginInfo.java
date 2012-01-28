@@ -58,6 +58,22 @@ public class IPMPluginInfo implements Serializable {
     @Override
     public String toString() {
         return "[" + "name=" + name + ", uri=" + uri + ", description=" + description + ", version=" + version + ']';
-    }        
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof IPMPluginInfo)) {
+            return false;
+        }
+        return obj.hashCode()==hashCode();
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 97 * hash + (this.name != null ? this.name.hashCode() : 0);
+        hash = 97 * hash + (this.version != null ? this.version.hashCode() : 0);
+        return hash;
+    }
     
 }

@@ -28,15 +28,18 @@ import org.bukkit.plugin.java.JavaPlugin;
 public abstract class IPMPlugin extends JavaPlugin {
     
     private IPMPluginInfo info;
-    private static IPMAPI API;
     protected boolean online = true;
+    private boolean inited = false;
     public static final Logger log = Logger.getLogger("Minecraft");
 
     void init(IPMPluginInfo info, IPMAPI API) {
         this.info = info;
         checkInfo();
-        IPMPlugin.API = API;
+        init(API);
+        inited = true;
     }
+    
+    protected abstract void init(IPMAPI API);
     
     private void checkInfo() {
         if (info==null) {
@@ -44,10 +47,6 @@ public abstract class IPMPlugin extends JavaPlugin {
             info = new IPMPluginInfo(getDescription().getFullName(), "", getDescription().getDescription(), Version.UNKNOWN, "", false, false);
             log.warning(Manager.pre+getDescription().getFullName()+" is not in the IndiPlex Manager plugins dir!");
         }
-    }
-    
-    public static IPMAPI getAPI() {
-        return API;
     }
     
     public String getDes() {
@@ -92,20 +91,15 @@ public abstract class IPMPlugin extends JavaPlugin {
     }
 
     @Override
-    public void onEnable() {
-        if (API == null) {
+    public void onLoad() {
+        if (!inited) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        printEnabled(onIPMEnable());
-    }
-
-    @Override
-    public void onDisable() {
-        printDisabled(onIPMDisable());
+        onIPMLoad();
     }
     
-    protected abstract String onIPMEnable();
-    protected abstract String onIPMDisable();
+    protected void onIPMLoad() {
+    }
     
 }

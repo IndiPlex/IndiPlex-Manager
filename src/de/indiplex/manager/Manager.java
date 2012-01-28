@@ -290,7 +290,7 @@ public class Manager extends JavaPlugin {
                 PluginDescriptionFile des = p.getDescription();
                 info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
             }
-            plug.init(info, new IPMAPI(this, plug));
+            plug.init(info, new IPMAPI(this, info));
             plug.onLoad();
         }
         getConfiguration().save();
@@ -378,5 +378,9 @@ public class Manager extends JavaPlugin {
             }
         }
         return null;
+    }
+    
+    public API getAPI(String api) {
+        return apis.get(api);
     }
 }

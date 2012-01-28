@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
 
 /**
  *
@@ -30,7 +29,7 @@ import org.bukkit.plugin.Plugin;
  */
 public class IPMAPI {
     
-    private Plugin plugin;
+    private IPMPluginInfo plugin;
     private Manager IPM;   
     private Config config;
     
@@ -39,7 +38,7 @@ public class IPMAPI {
      * @param IPM Assigns the instance of the IndiPlex-Manager
      * @param plugin Assigns the instance of the plugin to the IPMAPI 
      */
-    public IPMAPI(Manager IPM, Plugin plugin) {
+    public IPMAPI(Manager IPM, IPMPluginInfo plugin) {
         this.IPM = IPM;
         this.plugin = plugin;
         this.config = IPM.getIPMConfig();
@@ -53,8 +52,8 @@ public class IPMAPI {
         return getDataFolder(plugin);
     }
     
-    private File getDataFolder(Plugin plugin) {
-        File f = new File(IPM.getDataFolder(), "/config/"+plugin.getDescription().getName());
+    private File getDataFolder(IPMPluginInfo plugin) {
+        File f = new File(IPM.getDataFolder(), "/config/"+plugin.getName());
         if (!f.exists()) f.mkdirs();
         return f;
     }
@@ -67,9 +66,9 @@ public class IPMAPI {
         return getConfig(plugin);
     }
     
-    private YamlConfiguration getConfig(Plugin plugin) {
-        File f = new File(IPM.getDataFolder(), "/config/"+plugin.getDescription().getName()+".yml");
-        Manager.log.info(Manager.pre+"Reqested config for "+plugin.getDescription().getName()+" file "+f);
+    private YamlConfiguration getConfig(IPMPluginInfo plugin) {
+        File f = new File(IPM.getDataFolder(), "/config/"+plugin.getName()+".yml");
+        Manager.log.info(Manager.pre+"Reqested config for "+plugin.getName()+" file "+f);
         YamlConfiguration yaml = new YamlConfiguration();
         try {
             if (!f.exists()) f.createNewFile();
@@ -86,9 +85,10 @@ public class IPMAPI {
      * @return boolean True for success otherwise false
      */
     public boolean saveConfig(YamlConfiguration yaml) {
-        File f = new File(IPM.getDataFolder(), "/config/"+plugin.getDescription().getName()+".yml");
+        File f = new File(IPM.getDataFolder(), "/config/"+plugin.getName()+".yml");
         try {
             yaml.save(f);
+            Manager.log.info(Manager.pre+"Saved config of "+plugin.getName()+" to "+f);
         } catch (IOException ex) {
             return false;
         }
@@ -100,7 +100,7 @@ public class IPMAPI {
      * @param api Custom API to assign
      */
     public void registerAPI(API api) {
-        registerAPI(plugin.getDescription().getName(), api);
+        registerAPI(plugin.getName(), api);
     }
     
     /**
@@ -129,7 +129,7 @@ public class IPMAPI {
      * @return boolean True for success otherwise false
      */
     public boolean putData(String category, String key, Object value) {
-        return config.getStHandler().put(plugin.getDescription().getName(), category, key, value);
+        return config.getStHandler().put(plugin.getName(), category, key, value);
     }
     
     /**
@@ -139,7 +139,11 @@ public class IPMAPI {
      * @return boolean True for success otherwise false
      */
     public boolean removeData(String category, String key) {
-        return config.getStHandler().remove(plugin.getDescription().getName(), category, key);
+        return config.getStHandler().remove(plugin.getName(), category, key);
+    }
+    
+    public String test() {
+        return plugin.getName();
     }
     
     /**
@@ -149,7 +153,7 @@ public class IPMAPI {
      * @return Object Return the object specified by the category and key
      */
     public Object getData(String category, String key) {
-        return config.getStHandler().get(plugin.getDescription().getName(), category, key);
+        return config.getStHandler().get(plugin.getName(), category, key);
     }
     
     /**

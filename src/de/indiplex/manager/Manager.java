@@ -239,9 +239,9 @@ public class Manager extends JavaPlugin {
                 pluginInfos.add(plugin);
             }
 
-            for (IPMPluginInfo plugin : pluginInfos) {
+            /*for (IPMPluginInfo plugin : pluginInfos) {
                 log.info(pre + "Found plugin " + plugin.getName());
-            }
+            }*/
         } catch (Exception ex) {
             config.setOffline(ex);
         }
@@ -286,7 +286,6 @@ public class Manager extends JavaPlugin {
         }
         getConfiguration().load();
         for (IPMPluginInfo info : queuePlugins.keySet()) {
-            log.warning(pre+"load "+info.getName());
             Plugin p = queuePlugins.get(info);
             if (!(p instanceof IPMPlugin)) {
                 log.warning(pre + "Can't load " + p.getDescription().getName() + "!");

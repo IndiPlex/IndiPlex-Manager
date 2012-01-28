@@ -44,7 +44,7 @@ public abstract class IPMPlugin extends JavaPlugin {
     private void checkInfo() {
         if (info==null) {
             online = false;
-            info = new IPMPluginInfo(getDescription().getFullName(), "", getDescription().getDescription(), Version.UNKNOWN, "", false, false);
+            info = new IPMPluginInfo(getDescription().getFullName(), "", getDescription().getDescription(), Version.UNKNOWN, "", false, false, false);
             log.warning(Manager.pre+getDescription().getFullName()+" is not in the IndiPlex Manager plugins dir!");
         }
     }

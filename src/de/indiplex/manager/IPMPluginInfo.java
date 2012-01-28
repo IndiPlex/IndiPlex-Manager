@@ -16,8 +16,9 @@ public class IPMPluginInfo implements Serializable {
     private String[] depends; 
     private boolean fupdate;
     private boolean fdownload;
+    private boolean api;
 
-    public IPMPluginInfo(String name, String uri, String description, Version version, String depends, boolean fupdate, boolean fdownload) {
+    public IPMPluginInfo(String name, String uri, String description, Version version, String depends, boolean fupdate, boolean fdownload, boolean api) {
         this.name = name;
         this.uri = uri;
         this.description = description;
@@ -25,6 +26,11 @@ public class IPMPluginInfo implements Serializable {
         this.depends = depends.split(";");
         this.fupdate = fupdate;
         this.fdownload = fdownload;
+        this.api = api;
+    }
+
+    public boolean isApi() {
+        return api;
     }
 
     public String[] getDepends() {

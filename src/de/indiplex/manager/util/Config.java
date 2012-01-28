@@ -33,8 +33,11 @@ import java.util.List;
 import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
+import org.bukkit.plugin.InvalidDescriptionException;
+import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.util.config.Configuration;
 
 /**
@@ -50,9 +53,11 @@ public class Config {
     private boolean autoUpdate;
     private HashMap<String, String> versions = new HashMap<String, String>();
     private StorageHandler stHandler;
+    private File pluginFolder;
 
     public void init(Manager IPM) {
         this.IPM = IPM;
+        pluginFolder = new File(IPM.getDataFolder().getAbsolutePath() + "/plugins");
         readVersions();
         if (versions.get("IndiPlexManager") == null) {
             versions.put("IndiPlexManager", "0.0.0");
@@ -137,6 +142,9 @@ public class Config {
         Configuration config = IPM.getConfiguration();
         List<String> keys = new ArrayList<String>();
         for (IPMPluginInfo plugin : IPM.getPluginInfos()) {
+            if (plugin.isApi()) {
+                continue;
+            }
             if (config.getString(plugin.getName() + ".enabled") == null) {
                 config.setProperty(plugin.getName() + ".enabled", plugin.isFdownload() || plugin.isFupdate());
             }
@@ -166,13 +174,12 @@ public class Config {
         config.save();
     }
 
-    public HashMap<IPMPluginInfo,Plugin> load() {
+    public HashMap<IPMPluginInfo, Plugin> load() {
         try {
             Configuration config = IPM.getConfiguration();
             List<String> keys = new ArrayList<String>(config.getKeys());
-            keys.remove("options");
-            File pluginFolder = new File(IPM.getDataFolder().getAbsolutePath() + "/plugins");
-            HashMap<IPMPluginInfo,Plugin> plugs = new HashMap<IPMPluginInfo,Plugin>();
+            keys.remove("options");            
+            HashMap<IPMPluginInfo, Plugin> plugs = new HashMap<IPMPluginInfo, Plugin>();
             if (!online) {
                 File pluginsFirst = new File(IPM.getDataFolder().getAbsolutePath() + "/pluginsfirst");
                 if (pluginsFirst.exists()) {
@@ -182,7 +189,7 @@ public class Config {
                             log.severe(Manager.pre + "PLUGIN " + p + " IS INVALID!!!");
                         }
                         PluginDescriptionFile des = plug.getDescription();
-                        IPMPluginInfo info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
+                        IPMPluginInfo info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false, false);
                         plugs.put(info, plug);
                     }
                 }
@@ -193,7 +200,7 @@ public class Config {
                             log.severe(Manager.pre + "PLUGIN " + p + " IS INVALID!!!");
                         }
                         PluginDescriptionFile des = plug.getDescription();
-                        IPMPluginInfo info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
+                        IPMPluginInfo info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false, false);
                         plugs.put(info, plug);
                     }
                 }
@@ -204,44 +211,10 @@ public class Config {
                 if (info == null || (!info.isFdownload() && !config.getBoolean(s + ".enabled", false))) {
                     continue;
                 }
-                File pluginFile = new File(pluginFolder, s + ".jar");
-                Version installed_version = null;
-                Version actual_version = null;
-
-                actual_version = info.getVersion();
-                String v = versions.get(info.getName());
-                if (v != null) {
-                    installed_version = Version.parse(v);
+                Plugin plug = getPlugin(info);
+                if (plug!=null) {
+                    plugs.put(info, plug);
                 }
-                if (actual_version == null) {
-                    log.warning(Manager.pre + "Can't parse version of plugin " + info.getName() + "(version:" + info.getVersion() + ")");
-                }
-
-                boolean auto_update = autoUpdate;
-                if (info.isFupdate()) {
-                    auto_update = true;
-                } else if (config.getString(info.getName() + ".autoupdate") != null) {
-                    auto_update = config.getBoolean(info.getName() + ".autoupdate", true);
-                }
-                int vDep = versionDepth;
-                if (config.getString(s + ".versiondepth") != null) {
-                    vDep = config.getInt(s + ".versiondepth", versionDepth);
-                }
-                if (installed_version == null || actual_version == null || (auto_update && installed_version.isNewer(vDep, actual_version))) {
-                    IPM.queueDownloadPlugin(s);
-                    log.info(Manager.pre + info.getName() + " was updated to v" + actual_version);
-                } else if (installed_version.isNewer(vDep, actual_version)) {
-                    log.info(Manager.pre + "New version of " + info.getName() + " found(v" + installed_version + " is installed, v" + actual_version + " is the actual), but autoupdate is off...");
-                } else if (!pluginFile.exists()) {
-                    log.info(Manager.pre + info.getName() + " is missing");
-                    IPM.queueDownloadPlugin(s);
-                }
-                Plugin plug = IPM.getServer().getPluginManager().loadPlugin(pluginFile);
-                if (plug == null) {
-                    log.severe(Manager.pre + " CANT LOAD PLUGIN " + s + "!!!");
-                    continue;
-                }
-                plugs.put(info, plug);
             }
             return plugs;
         } catch (Exception e) {
@@ -249,6 +222,47 @@ public class Config {
             log.warning(Manager.pre + e.toString());
             return null;
         }
+    }
+
+    public Plugin getPlugin(IPMPluginInfo info) throws InvalidPluginException, InvalidDescriptionException, UnknownDependencyException {
+        Configuration config = IPM.getConfiguration();
+        File pluginFile = new File(pluginFolder, info.getName() + ".jar");
+        Version installed_version = null;
+        Version actual_version = null;
+
+        actual_version = info.getVersion();
+        String v = versions.get(info.getName());
+        if (v != null) {
+            installed_version = Version.parse(v);
+        }
+        if (actual_version == null) {
+            log.warning(Manager.pre + "Can't parse version of plugin " + info.getName() + "(version:" + info.getVersion() + ")");
+        }
+
+        boolean auto_update = autoUpdate;
+        if (info.isFupdate()) {
+            auto_update = true;
+        } else if (config.getString(info.getName() + ".autoupdate") != null) {
+            auto_update = config.getBoolean(info.getName() + ".autoupdate", true);
+        }
+        int vDep = versionDepth;
+        if (config.getString(info.getName() + ".versiondepth") != null) {
+            vDep = config.getInt(info.getName() + ".versiondepth", versionDepth);
+        }
+        if (installed_version == null || actual_version == null || (auto_update && installed_version.isNewer(vDep, actual_version))) {
+            IPM.downloadPlugin(info);
+            log.info(Manager.pre + info.getName() + " was updated to v" + actual_version);
+        } else if (installed_version.isNewer(vDep, actual_version)) {
+            log.info(Manager.pre + "New version of " + info.getName() + " found(v" + installed_version + " is installed, v" + actual_version + " is the actual), but autoupdate is off...");
+        } else if (!pluginFile.exists()) {
+            log.info(Manager.pre + info.getName() + " is missing");
+            IPM.downloadPlugin(info);
+        }
+        Plugin plug = IPM.getServer().getPluginManager().loadPlugin(pluginFile);
+        if (plug == null) {
+            log.severe(Manager.pre + " CANT LOAD PLUGIN " + info.getName() + "!!!");
+        }
+        return plug;
     }
 
     public void save() {

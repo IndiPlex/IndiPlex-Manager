@@ -34,8 +34,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
+import org.bukkit.plugin.InvalidDescriptionException;
+import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.UnknownDependencyException;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.FileUtil;
 import org.w3c.dom.Document;
@@ -201,6 +204,7 @@ public class Manager extends JavaPlugin {
                 String depends = null;
                 boolean fupdate = false;
                 boolean fdownload = false;
+                boolean api = false;
 
                 if (node.getNodeType() != Node.ELEMENT_NODE) {
                     continue;
@@ -227,9 +231,11 @@ public class Manager extends JavaPlugin {
                         fupdate = !ele.getTextContent().equals("0");
                     } else if (ele.getNodeName().equals("fdownload")) {
                         fdownload = !ele.getTextContent().equals("0");
+                    } else if (ele.getNodeName().equals("api")) {
+                        api = !ele.getTextContent().equals("0");
                     }
                 }
-                plugin = new IPMPluginInfo(name, uri, description, version, depends, fupdate, fdownload);
+                plugin = new IPMPluginInfo(name, uri, description, version, depends, fupdate, fdownload, api);
                 pluginInfos.add(plugin);
             }
 
@@ -289,7 +295,7 @@ public class Manager extends JavaPlugin {
             IPMPlugin plug = (IPMPlugin) p;
             if (!config.isOnline()) {
                 PluginDescriptionFile des = p.getDescription();
-                info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false);
+                info = new IPMPluginInfo(des.getName(), "", des.getDescription(), Version.parse(des.getVersion() + ".0.0"), "", false, false, false);
             }
             plug.init(info, new IPMAPI(this, info));
             plug.onLoad();
@@ -307,10 +313,20 @@ public class Manager extends JavaPlugin {
                 continue;
             }
             IPMPluginInfo info = getPluginInfoByPluginName(s);
-            Plugin p = plugs.get(info);
-            if (p == null) {
+            if (info == null) {
                 log.severe(pre + "PLUGIN " + s + " INVALID!!!");
                 return;
+            }
+            if (plugs.get(info)==null) {
+                try {
+                    plugs.put(info, config.getPlugin(info));
+                } catch (InvalidPluginException ex) {
+                    ex.printStackTrace();
+                } catch (InvalidDescriptionException ex) {
+                    ex.printStackTrace();
+                } catch (UnknownDependencyException ex) {
+                    ex.printStackTrace();
+                }
             }
             if (!queuePlugins.containsKey(info)) {
                 loadPlugin(plugs, queuePlugins, info);
@@ -331,19 +347,18 @@ public class Manager extends JavaPlugin {
         return null;
     }
 
-    private boolean downloadPlugin(String name) {
+    public boolean downloadPlugin(IPMPluginInfo info) {
         File pluginFolder = new File(getDataFolder().getAbsolutePath() + "/plugins");
         if (!pluginFolder.exists()) {
             pluginFolder.mkdirs();
         }
-        IPMPluginInfo info = getPluginInfoByPluginName(name);
         String uri = info.getUri();
         if (!uri.endsWith(".jar")) {
             uri += "/" + info.getVersion().toString() + ".jar";
         }
         log.info(pre + "Downloading: " + uri);
         try {
-            FileOutputStream fos = new FileOutputStream(new File(pluginFolder, name + ".jar"));
+            FileOutputStream fos = new FileOutputStream(new File(pluginFolder, info.getName() + ".jar"));
             InputStream is = new URI(uri).toURL().openStream();
 
             int t = is.read();
@@ -364,11 +379,12 @@ public class Manager extends JavaPlugin {
         }
     }
 
-    public boolean queueDownloadPlugin(String name) {
-        return downloadPlugin(name);
-    }
-
     public IPMPluginInfo getPluginInfoByPluginName(String name) {
+        for (IPMPluginInfo plugin : pluginInfos) {
+            if (plugin.getName().equals(name)) {
+                return plugin;
+            }
+        }
         name = name.replaceAll(" ", "");
         for (IPMPluginInfo plugin : pluginInfos) {
             if (plugin.getName().equals(name)) {

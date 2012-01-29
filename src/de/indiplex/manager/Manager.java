@@ -278,9 +278,11 @@ public class Manager extends JavaPlugin {
     private void loadPlugins(HashMap<IPMPluginInfo, Plugin> plugs) {
         HashMap<IPMPluginInfo, Plugin> queuePlugins = new HashMap<IPMPluginInfo, Plugin>();
         if (config.isOnline()) {
+            HashMap<IPMPluginInfo, Plugin> plugsTemp = (HashMap<IPMPluginInfo, Plugin>) plugs.clone();
             for (IPMPluginInfo p : plugs.keySet()) {
-                loadPlugin(plugs, queuePlugins, p);
+                loadPlugin(plugsTemp, queuePlugins, p);
             }
+            plugs = plugsTemp;
         } else {
             queuePlugins = plugs;
         }

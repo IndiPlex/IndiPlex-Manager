@@ -54,6 +54,7 @@ public class Config {
     private HashMap<String, String> versions = new HashMap<String, String>();
     private StorageHandler stHandler;
     private File pluginFolder;
+    private ArrayList<String> requiredAPIs = new ArrayList<String>();
 
     public void init(Manager IPM) {
         this.IPM = IPM;
@@ -143,6 +144,9 @@ public class Config {
         List<String> keys = new ArrayList<String>();
         for (IPMPluginInfo plugin : IPM.getPluginInfos()) {
             if (plugin.isApi()) {
+                if (plugin.isFdownload()) {
+                    requiredAPIs.add(plugin.getName());
+                }
                 continue;
             }
             if (config.getString(plugin.getName() + ".enabled") == null) {

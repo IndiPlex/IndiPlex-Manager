@@ -68,7 +68,7 @@ public class IPMAPI {
     
     private YamlConfiguration getConfig(IPMPluginInfo plugin) {
         File f = new File(IPM.getDataFolder(), "/config/"+plugin.getName()+".yml");
-        Manager.log.info(Manager.pre+"Reqested config for "+plugin.getName()+" file "+f);
+        // Manager.log.info(Manager.pre+"Reqested config for "+plugin.getName()+" file "+f);
         YamlConfiguration yaml = new YamlConfiguration();
         try {
             if (!f.exists()) f.createNewFile();
@@ -88,7 +88,7 @@ public class IPMAPI {
         File f = new File(IPM.getDataFolder(), "/config/"+plugin.getName()+".yml");
         try {
             yaml.save(f);
-            Manager.log.info(Manager.pre+"Saved config of "+plugin.getName()+" to "+f);
+            // Manager.log.info(Manager.pre+"Saved config of "+plugin.getName()+" to "+f);
         } catch (IOException ex) {
             return false;
         }

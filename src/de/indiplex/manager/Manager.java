@@ -98,6 +98,7 @@ public class Manager extends JavaPlugin {
                 log.warning(pre + "RESTART SERVER TO ENABLE THE UPDATE!");
                 updated = true;
                 getServer().getPluginManager().disablePlugin(this);
+                //getServer().reload();
                 return;
             }
 

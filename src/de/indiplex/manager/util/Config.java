@@ -182,7 +182,8 @@ public class Config {
         try {
             Configuration config = IPM.getConfiguration();
             List<String> keys = new ArrayList<String>(config.getKeys());
-            keys.remove("options");            
+            keys.remove("options");
+            keys.addAll(requiredAPIs);
             HashMap<IPMPluginInfo, Plugin> plugs = new HashMap<IPMPluginInfo, Plugin>();
             if (!online) {
                 File pluginsFirst = new File(IPM.getDataFolder().getAbsolutePath() + "/pluginsfirst");

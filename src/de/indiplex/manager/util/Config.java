@@ -30,15 +30,16 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.InvalidPluginException;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.UnknownDependencyException;
-import org.bukkit.util.config.Configuration;
 
 /**
  *
@@ -89,22 +90,21 @@ public class Config {
     }
 
     private void getOptions() {
-        Configuration config = IPM.getConfiguration();
-        config.load();
+        FileConfiguration config = IPM.getConfig();
 
         if (config.getString("options.online") == null) {
-            config.setProperty("options.online", true);
+            config.set("options.online", true);
         }
 
         online = config.getBoolean("options.online", true);
 
         if (config.getString("options.versiondepth") == null) {
-            config.setProperty("options.versiondepth", 1);
+            config.set("options.versiondepth", 1);
         }
         versionDepth = config.getInt("options.versiondepth", 1);
 
         if (config.getString("options.autoupdate") == null) {
-            config.setProperty("options.autoupdate", true);
+            config.set("options.autoupdate", true);
         }
         autoUpdate = config.getBoolean("options.autoupdate", true);
 
@@ -115,32 +115,32 @@ public class Config {
         String host = config.getString("options.database.host");
 
         if (type == null) {
-            config.setProperty("options.database.type", "sqlite");
+            config.set("options.database.type", "sqlite");
             type = "sqlite";
         } else if (!type.equalsIgnoreCase("sqlite")) {
             if (user == null) {
-                config.setProperty("options.database.user", "minecraft");
+                config.set("options.database.user", "minecraft");
                 user = "minecraft";
             }
             if (pass == null) {
-                config.setProperty("options.database.password", "PW");
+                config.set("options.database.password", "PW");
                 pass = "minecraft";
             }
             if (host == null) {
-                config.setProperty("options.database.host", "localhost");
+                config.set("options.database.host", "localhost");
                 host = "localhost";
             }
         }
         if (db == null) {
-            config.setProperty("options.database.dbname", "IPM.db");
+            config.set("options.database.dbname", "IPM.db");
             db = "IPM.db";
         }
         stHandler = new StorageHandler(StorageHandler.Type.valueOf(type.toUpperCase()), db, user, pass, host);
-        config.save();
+        IPM.saveConfig();
     }
 
     public void update() {
-        Configuration config = IPM.getConfiguration();
+        FileConfiguration config = IPM.getConfig();
         List<String> keys = new ArrayList<String>();
         for (IPMPluginInfo plugin : IPM.getPluginInfos()) {
             if (plugin.isApi()) {
@@ -150,38 +150,38 @@ public class Config {
                 continue;
             }
             if (config.getString(plugin.getName() + ".enabled") == null) {
-                config.setProperty(plugin.getName() + ".enabled", plugin.isFdownload() || plugin.isFupdate());
+                config.set(plugin.getName() + ".enabled", plugin.isFdownload() || plugin.isFupdate());
             }
             if (plugin.isFdownload()) {
-                config.setProperty(plugin.getName() + ".enabled", true);
+                config.set(plugin.getName() + ".enabled", true);
             }
             if (plugin.isFupdate()) {
-                config.setProperty(plugin.getName() + ".autoupdate", true);
+                config.set(plugin.getName() + ".autoupdate", true);
             }
-            config.setProperty(plugin.getName() + ".version.actual", plugin.getVersion().toString());
+            config.set(plugin.getName() + ".version.actual", plugin.getVersion().toString());
 
             keys.add(plugin.getName());
         }
         for (IPMPluginInfo plugin : IPM.getPluginInfos()) {
             if (config.getBoolean(plugin.getName() + ".enabled", false)) {
                 for (String dep : plugin.getDepends()) {
-                    config.setProperty(dep + ".enabled", true);
+                    config.set(dep + ".enabled", true);
                 }
             }
         }
         keys.add("options");
-        List<String> ks = config.getKeys();
+        Set<String> ks = config.getKeys(false);
         ks.removeAll(keys);
         for (String k : ks) {
-            config.removeProperty(k);
+            config.set(k, null);
         }
-        config.save();
+        IPM.saveConfig();
     }
 
     public HashMap<IPMPluginInfo, Plugin> load() {
         try {
-            Configuration config = IPM.getConfiguration();
-            List<String> keys = new ArrayList<String>(config.getKeys());
+            FileConfiguration config = IPM.getConfig();
+            List<String> keys = new ArrayList<String>(config.getKeys(false));
             keys.remove("options");
             keys.addAll(requiredAPIs);
             HashMap<IPMPluginInfo, Plugin> plugs = new HashMap<IPMPluginInfo, Plugin>();
@@ -230,7 +230,7 @@ public class Config {
     }
 
     public Plugin getPlugin(IPMPluginInfo info) throws InvalidPluginException, InvalidDescriptionException, UnknownDependencyException {
-        Configuration config = IPM.getConfiguration();
+        FileConfiguration config = IPM.getConfig();
         File pluginFile = new File(pluginFolder, info.getName() + ".jar");
         Version installed_version = null;
         Version actual_version = null;

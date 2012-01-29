@@ -31,7 +31,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.bukkit.plugin.InvalidDescriptionException;
@@ -285,7 +284,6 @@ public class Manager extends JavaPlugin {
         } else {
             queuePlugins = plugs;
         }
-        getConfiguration().load();
         for (IPMPluginInfo info : queuePlugins.keySet()) {
             Plugin p = queuePlugins.get(info);
             if (!(p instanceof IPMPlugin)) {
@@ -300,7 +298,7 @@ public class Manager extends JavaPlugin {
             plug.init(info, new IPMAPI(this, info));
             plug.onLoad();
         }
-        getConfiguration().save();
+        saveConfig();
         for (Plugin p : queuePlugins.values()) {
             getServer().getPluginManager().enablePlugin(p);
             log.info(pre + "Loaded " + p.getDescription().getName());
@@ -338,15 +336,6 @@ public class Manager extends JavaPlugin {
 
     }
 
-    private Plugin getBukkitPluginByPluginName(List<Plugin> plugs, String name) {
-        for (Plugin plugin : plugs) {
-            if (plugin.getDescription().getName().equals(name)) {
-                return plugin;
-            }
-        }
-        return null;
-    }
-
     public boolean downloadPlugin(IPMPluginInfo info) {
         File pluginFolder = new File(getDataFolder().getAbsolutePath() + "/plugins");
         if (!pluginFolder.exists()) {
@@ -370,8 +359,10 @@ public class Manager extends JavaPlugin {
             is.close();
             config.setVersion(info.getName(), info.getVersion().toString());
             config.saveVersions();
-            getConfiguration().setProperty(info.getName() + ".version.installed", info.getVersion().toString());
-            getConfiguration().save();
+            if (!info.isApi()) {
+                getConfig().set(info.getName() + ".version.installed", info.getVersion().toString());
+            }
+            saveConfig();
             return true;
         } catch (Exception e) {
             log.info(e.toString());

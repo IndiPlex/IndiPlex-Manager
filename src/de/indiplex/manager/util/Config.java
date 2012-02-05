@@ -25,7 +25,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PrintStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.apache.commons.codec.binary.Base64OutputStream;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.InvalidDescriptionException;
 import org.bukkit.plugin.InvalidPluginException;
@@ -305,16 +303,7 @@ public class Config {
             if (!vers.exists()) {
                 vers.createNewFile();
             }
-            /*BufferedReader br = new BufferedReader(new InputStreamReader(new Base64InputStream(new FileInputStream(vers))));
-            while (br.ready()) {
-            String line = br.readLine();
-            String[] parts = line.split("\\:");
-            if (parts.length != 2) {
-            continue;
-            }
-            versions.put(parts[0], parts[1]);
-            }
-            br.close();*/
+            
             try {
                 ObjectInputStream ois = new ObjectInputStream(new FileInputStream(vers));
                 int l = ois.readInt();
@@ -343,11 +332,7 @@ public class Config {
             if (!vers.exists()) {
                 vers.createNewFile();
             }
-            /*PrintStream ps = new PrintStream(new Base64OutputStream(new FileOutputStream(vers)));
-            for (String p : versions.keySet()) {
-            ps.println(p + ":" + versions.get(p));
-            }
-            ps.close();*/
+            
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(vers));
             oos.writeInt(versions.size());
             for (String p : versions.keySet()) {

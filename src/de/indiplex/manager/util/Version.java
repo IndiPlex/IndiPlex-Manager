@@ -30,8 +30,10 @@ public class Version implements Serializable {
     private final int alpha;
     
     public static final Version UNKNOWN = new Version(-1, -1, -1);
+    public static final Version NULL = new Version(0, 0, 0);
+    public static final Version STANDARD = new Version(1, 0, 0);
 
-    private Version(int stable, int beta, int alpha) {
+    public Version(int stable, int beta, int alpha) {
         this.stable = stable;
         this.beta = beta;
         this.alpha = alpha;

@@ -18,6 +18,7 @@
 package de.indiplex.manager;
 
 import de.indiplex.manager.util.Config;
+import de.indiplex.manager.util.IOUtils;
 import de.indiplex.manager.util.Version;
 import java.io.BufferedReader;
 import java.io.File;
@@ -27,7 +28,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,7 +134,7 @@ public class Manager extends JavaPlugin {
             BufferedReader br = new BufferedReader(new InputStreamReader(vFile.openStream()));
             Version v = Version.parse(br.readLine());
             br.close();
-            Version tv = Version.parse(config.getVersion("IndiPlexManager"));
+            Version tv = config.getVersion("IndiPlexManager");
             if (tv.isNewer(config.getVersionDepth(), v)) {
                 if (update(v)) {
                     log.info(pre + "Updated to v" + v);
@@ -174,7 +174,7 @@ public class Manager extends JavaPlugin {
             is.close();
             out.close();
             FileUtil.copy(tmp, getFile());
-            config.setVersion("IndiPlexManager", newV.toString());
+            config.setVersion("IndiPlexManager", newV);
             config.saveVersions();
             return true;
         } catch (Exception e) {
@@ -240,7 +240,7 @@ public class Manager extends JavaPlugin {
             }
 
             /*for (IPMPluginInfo plugin : pluginInfos) {
-                log.info(pre + "Found plugin " + plugin.getName());
+            log.info(pre + "Found plugin " + plugin.getName());
             }*/
         } catch (Exception ex) {
             config.setOffline(ex);
@@ -317,7 +317,7 @@ public class Manager extends JavaPlugin {
                 log.severe(pre + "PLUGIN " + s + " INVALID!!!");
                 return;
             }
-            if (plugs.get(info)==null) {
+            if (plugs.get(info) == null) {
                 try {
                     plugs.put(info, config.getPlugin(info));
                 } catch (InvalidPluginException ex) {
@@ -350,7 +350,7 @@ public class Manager extends JavaPlugin {
         log.info(pre + "Downloading: " + uri);
         try {
             FileOutputStream fos = new FileOutputStream(new File(pluginFolder, info.getName() + ".jar"));
-            InputStream is = new URI(uri).toURL().openStream();
+            InputStream is = new URL(uri).openStream();
 
             int t = is.read();
             while (t != -1) {
@@ -359,12 +359,40 @@ public class Manager extends JavaPlugin {
             }
             fos.close();
             is.close();
-            config.setVersion(info.getName(), info.getVersion().toString());
+            config.setVersion(info.getName(), info.getVersion());
             config.saveVersions();
             if (!info.isApi()) {
                 getConfig().set(info.getName() + ".version.installed", info.getVersion().toString());
             }
             saveConfig();
+
+            if (config.isSaveChangelogs()) {
+                String url = "http://hosting.indiplex.de/plugins/changelog.php?plugin=" + info.getName();
+                is = new URL(url).openStream();
+                log.info(pre+"Downloding changelog "+url+"...");
+                File f = new File(getDataFolder(), "changelogs");
+                if (!f.exists()) {
+                    f.mkdirs();
+                }
+                File changelog = new File(f, info.getName() + ".html");
+                if (changelog.exists()) {
+                    changelog.delete();
+                }
+                changelog.createNewFile();
+                fos = new FileOutputStream(changelog);
+                IOUtils.copyAndCloseStrams(is, fos);
+                f = new File(f, "cl");
+                File css = new File(f, "changelog.css");
+                if (!css.exists()) {
+                    if (!f.exists()) {
+                        f.mkdir();
+                    }
+                    url = "http://hosting.indiplex.de/plugins/cl/changelog.css";
+                    is = new URL(url).openStream();
+                    fos = new FileOutputStream(css);
+                    IOUtils.copyAndCloseStrams(is, fos);
+                }
+            }
             return true;
         } catch (Exception e) {
             log.info(e.toString());

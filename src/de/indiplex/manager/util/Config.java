@@ -18,12 +18,13 @@
 package de.indiplex.manager.util;
 
 import de.indiplex.manager.*;
-import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.net.URL;
 import java.net.URLConnection;
@@ -32,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.InvalidDescriptionException;
@@ -52,17 +52,18 @@ public class Config {
     private boolean online = true;
     private int versionDepth;
     private boolean autoUpdate;
-    private HashMap<String, String> versions = new HashMap<String, String>();
+    private HashMap<String, Version> versions = new HashMap<String, Version>();
     private StorageHandler stHandler;
     private File pluginFolder;
     private ArrayList<String> requiredAPIs = new ArrayList<String>();
+    private boolean saveChangelogs;
 
     public void init(Manager IPM) {
         this.IPM = IPM;
         pluginFolder = new File(IPM.getDataFolder().getAbsolutePath() + "/plugins");
         readVersions();
         if (versions.get("IndiPlexManager") == null) {
-            versions.put("IndiPlexManager", "0.0.0");
+            versions.put("IndiPlexManager", Version.NULL);
         }
         getOptions();
         if (isOnline()) {
@@ -107,6 +108,11 @@ public class Config {
             config.set("options.autoupdate", true);
         }
         autoUpdate = config.getBoolean("options.autoupdate", true);
+
+        if (config.getString("options.savechangelogs") == null) {
+            config.set("options.savechangelogs", true);
+        }
+        saveChangelogs = config.getBoolean("options.savechangelogs", true);
 
         String type = config.getString("options.database.type");
         String db = config.getString("options.database.dbname");
@@ -178,6 +184,10 @@ public class Config {
         IPM.saveConfig();
     }
 
+    public boolean isSaveChangelogs() {
+        return saveChangelogs;
+    }
+
     public HashMap<IPMPluginInfo, Plugin> load() {
         try {
             FileConfiguration config = IPM.getConfig();
@@ -217,7 +227,7 @@ public class Config {
                     continue;
                 }
                 Plugin plug = getPlugin(info);
-                if (plug!=null) {
+                if (plug != null) {
                     plugs.put(info, plug);
                 }
             }
@@ -232,14 +242,10 @@ public class Config {
     public Plugin getPlugin(IPMPluginInfo info) throws InvalidPluginException, InvalidDescriptionException, UnknownDependencyException {
         FileConfiguration config = IPM.getConfig();
         File pluginFile = new File(pluginFolder, info.getName() + ".jar");
-        Version installed_version = null;
         Version actual_version = null;
 
         actual_version = info.getVersion();
-        String v = versions.get(info.getName());
-        if (v != null) {
-            installed_version = Version.parse(v);
-        }
+        Version installed_version = versions.get(info.getName());
         if (actual_version == null) {
             log.warning(Manager.pre + "Can't parse version of plugin " + info.getName() + "(version:" + info.getVersion() + ")");
         }
@@ -286,7 +292,7 @@ public class Config {
         return autoUpdate;
     }
 
-    public void setVersion(String p, String v) {
+    public void setVersion(String p, Version v) {
         versions.put(p, v);
     }
 
@@ -299,17 +305,31 @@ public class Config {
             if (!vers.exists()) {
                 vers.createNewFile();
             }
-            BufferedReader br = new BufferedReader(new InputStreamReader(new Base64InputStream(new FileInputStream(vers))));
+            /*BufferedReader br = new BufferedReader(new InputStreamReader(new Base64InputStream(new FileInputStream(vers))));
             while (br.ready()) {
-                String line = br.readLine();
-                String[] parts = line.split("\\:");
-                if (parts.length != 2) {
-                    continue;
-                }
-                versions.put(parts[0], parts[1]);
+            String line = br.readLine();
+            String[] parts = line.split("\\:");
+            if (parts.length != 2) {
+            continue;
             }
-            br.close();
-        } catch (IOException e) {
+            versions.put(parts[0], parts[1]);
+            }
+            br.close();*/
+            try {
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream(vers));
+                int l = ois.readInt();
+                for (int i = 0; i < l; i++) {
+                    try {
+                        String key = ois.readUTF();
+                        Version v = (Version) ois.readObject();
+                        versions.put(key, v);
+                    } catch (Exception e) {
+                    }
+                }
+                ois.close();
+            } catch (EOFException e) {
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -323,17 +343,30 @@ public class Config {
             if (!vers.exists()) {
                 vers.createNewFile();
             }
-            PrintStream ps = new PrintStream(new Base64OutputStream(new FileOutputStream(vers)));
+            /*PrintStream ps = new PrintStream(new Base64OutputStream(new FileOutputStream(vers)));
             for (String p : versions.keySet()) {
-                ps.println(p + ":" + versions.get(p));
+            ps.println(p + ":" + versions.get(p));
             }
-            ps.close();
+            ps.close();*/
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(vers));
+            oos.writeInt(versions.size());
+            for (String p : versions.keySet()) {
+                try {
+                    Version v = versions.get(p);
+                    if (v != null) {
+                        oos.writeUTF(p);
+                        oos.writeObject(v);
+                    }
+                } catch (Exception e) {
+                }
+            }
+            oos.close();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    public String getVersion(String p) {
+    public Version getVersion(String p) {
         return versions.get(p);
     }
 }

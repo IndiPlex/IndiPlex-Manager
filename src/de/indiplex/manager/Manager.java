@@ -176,6 +176,8 @@ public class Manager extends JavaPlugin {
             FileUtil.copy(tmp, getFile());
             config.setVersion("IndiPlexManager", newV);
             config.saveVersions();
+            
+            downloadChangelog("IndiPlexManager");
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -366,37 +368,40 @@ public class Manager extends JavaPlugin {
             }
             saveConfig();
 
-            if (config.isSaveChangelogs()) {
-                String url = "http://hosting.indiplex.de/plugins/changelog.php?plugin=" + info.getName();
-                is = new URL(url).openStream();
-                log.info(pre+"Downloding changelog "+url+"...");
-                File f = new File(getDataFolder(), "changelogs");
-                if (!f.exists()) {
-                    f.mkdirs();
-                }
-                File changelog = new File(f, info.getName() + ".html");
-                if (changelog.exists()) {
-                    changelog.delete();
-                }
-                changelog.createNewFile();
-                fos = new FileOutputStream(changelog);
-                IOUtils.copyAndCloseStrams(is, fos);
-                f = new File(f, "cl");
-                File css = new File(f, "changelog.css");
-                if (!css.exists()) {
-                    if (!f.exists()) {
-                        f.mkdir();
-                    }
-                    url = "http://hosting.indiplex.de/plugins/cl/changelog.css";
-                    is = new URL(url).openStream();
-                    fos = new FileOutputStream(css);
-                    IOUtils.copyAndCloseStrams(is, fos);
-                }
-            }
+            downloadChangelog(info.getName());
             return true;
         } catch (Exception e) {
             log.info(e.toString());
             return false;
+        }
+    }
+
+    private void downloadChangelog(String name) throws IOException {
+        if (config.isSaveChangelogs()) {
+            String url = "http://hosting.indiplex.de/plugins/changelog.php?plugin=" + name;
+            InputStream is = new URL(url).openStream();
+            File f = new File(getDataFolder(), "changelogs");
+            if (!f.exists()) {
+                f.mkdirs();
+            }
+            File changelog = new File(f, name + ".html");
+            if (changelog.exists()) {
+                changelog.delete();
+            }
+            changelog.createNewFile();
+            FileOutputStream fos = new FileOutputStream(changelog);
+            IOUtils.copyAndCloseStrams(is, fos);
+            f = new File(f, "cl");
+            File css = new File(f, "changelog.css");
+            if (!css.exists()) {
+                if (!f.exists()) {
+                    f.mkdir();
+                }
+                url = "http://hosting.indiplex.de/plugins/cl/changelog.css";
+                is = new URL(url).openStream();
+                fos = new FileOutputStream(css);
+                IOUtils.copyAndCloseStrams(is, fos);
+            }
         }
     }
 

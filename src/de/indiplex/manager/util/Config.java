@@ -303,13 +303,14 @@ public class Config {
             if (!vers.exists()) {
                 vers.createNewFile();
             }
-            
+
             try {
                 ObjectInputStream ois = new ObjectInputStream(new FileInputStream(vers));
                 int l = ois.readInt();
                 for (int i = 0; i < l; i++) {
                     try {
                         String key = ois.readUTF();
+                        key = Crypter.decode(key);
                         Version v = (Version) ois.readObject();
                         versions.put(key, v);
                     } catch (Exception e) {
@@ -332,14 +333,14 @@ public class Config {
             if (!vers.exists()) {
                 vers.createNewFile();
             }
-            
+
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(vers));
             oos.writeInt(versions.size());
             for (String p : versions.keySet()) {
                 try {
                     Version v = versions.get(p);
                     if (v != null) {
-                        oos.writeUTF(p);
+                        oos.writeUTF(Crypter.encode(p));
                         oos.writeObject(v);
                     }
                 } catch (Exception e) {

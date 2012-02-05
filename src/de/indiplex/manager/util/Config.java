@@ -311,7 +311,10 @@ public class Config {
                     try {
                         String key = ois.readUTF();
                         key = Crypter.decode(key);
-                        Version v = (Version) ois.readObject();
+                        int s = ois.readInt();
+                        int b = ois.readInt();
+                        int a = ois.readInt();
+                        Version v = new Version(s, b, a);
                         versions.put(key, v);
                     } catch (Exception e) {
                     }
@@ -341,7 +344,9 @@ public class Config {
                     Version v = versions.get(p);
                     if (v != null) {
                         oos.writeUTF(Crypter.encode(p));
-                        oos.writeObject(v);
+                        oos.writeInt(v.getStable());
+                        oos.writeInt(v.getBeta());
+                        oos.writeInt(v.getAlpha());
                     }
                 } catch (Exception e) {
                 }

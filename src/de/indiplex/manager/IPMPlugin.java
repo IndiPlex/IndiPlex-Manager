@@ -53,7 +53,7 @@ public abstract class IPMPlugin extends JavaPlugin {
         return info.getDescription();
     }
 
-    public String getName() {
+    public String getIPMName() {
         return info.getName();
     }
 

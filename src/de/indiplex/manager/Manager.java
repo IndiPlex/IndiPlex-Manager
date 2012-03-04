@@ -177,7 +177,7 @@ public class Manager extends JavaPlugin {
             config.setVersion("IndiPlexManager", newV);
             config.saveVersions();
             
-            downloadChangelog("IndiPlexManager");
+            downloadChangelog(pre);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
